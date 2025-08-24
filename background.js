@@ -1,5 +1,9 @@
 // Background script for file operations
+console.log('Background script loaded');
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log('Background received message:', request);
+    
     if (request.action === 'savePrompt') {
         savePromptToFile(request.prompt, request.filename, request.timestamp);
         sendResponse({success: true});
@@ -7,6 +11,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 function savePromptToFile(promptText, filename, timestamp) {
+    console.log('Saving prompt to file:', filename);
+    
     const content = `Timestamp: ${timestamp}\nPrompt: ${promptText}\n\n${'='.repeat(50)}\n\n`;
     
     // Create blob with the prompt content
@@ -22,7 +28,7 @@ function savePromptToFile(promptText, filename, timestamp) {
         if (chrome.runtime.lastError) {
             console.error('Download failed:', chrome.runtime.lastError);
         } else {
-            console.log('Prompt saved successfully:', filename);
+            console.log('Prompt saved successfully with download ID:', downloadId);
         }
         // Clean up the object URL
         URL.revokeObjectURL(url);

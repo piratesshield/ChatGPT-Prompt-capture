@@ -3,6 +3,8 @@
     let isCapturing = true;
     let promptCounter = 0;
 
+    console.log('ChatGPT Prompt Capture Extension loaded');
+
     // Function to get current timestamp
     function getTimestamp() {
         return new Date().toISOString().replace(/[:.]/g, '-');
@@ -16,49 +18,84 @@
         const timestamp = getTimestamp();
         const filename = `chatgpt-prompt-${timestamp}.txt`;
         
+        console.log('Capturing prompt:', promptText);
+        
         // Send to background script for file saving
         chrome.runtime.sendMessage({
             action: 'savePrompt',
             prompt: promptText,
             filename: filename,
             timestamp: new Date().toISOString()
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error('Error sending message:', chrome.runtime.lastError);
+            } else {
+                console.log('Prompt saved successfully');
+            }
         });
-        
-        console.log('ChatGPT Prompt Captured:', promptText);
     }
 
-    // Function to monitor textarea changes and form submissions
+    // Enhanced function to find and monitor prompt input
     function setupPromptMonitoring() {
-        // Look for the main textarea where users type prompts
-        const textareaSelector = 'textarea[placeholder*="Message"], textarea[data-testid="textbox"], #prompt-textarea, textarea[placeholder*="Send a message"]';
+        console.log('Setting up prompt monitoring...');
         
-        // Monitor for form submissions
-        function monitorSubmissions() {
-            const textarea = document.querySelector(textareaSelector);
-            if (!textarea) {
-                setTimeout(monitorSubmissions, 1000);
-                return;
+        // Multiple selectors to find the prompt input textarea
+        const textareaSelectors = [
+            'textarea[placeholder*="Message"]',
+            'textarea[placeholder*="Send a message"]',
+            'textarea[data-testid="textbox"]',
+            '#prompt-textarea',
+            'textarea[placeholder*="message"]',
+            'div[contenteditable="true"]',
+            'textarea'
+        ];
+
+        let textarea = null;
+        
+        // Try to find the textarea
+        for (const selector of textareaSelectors) {
+            textarea = document.querySelector(selector);
+            if (textarea) {
+                console.log('Found textarea with selector:', selector);
+                break;
             }
+        }
 
-            // Monitor for Enter key or send button clicks
-            textarea.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    setTimeout(() => {
-                        const promptText = textarea.value || textarea.textContent;
-                        if (promptText && promptText.trim()) {
-                            capturePrompt(promptText.trim());
-                        }
-                    }, 100);
-                }
-            });
+        if (!textarea) {
+            console.log('Textarea not found, retrying in 2 seconds...');
+            setTimeout(setupPromptMonitoring, 2000);
+            return;
+        }
 
-            // Monitor for send button clicks
+        // Store the last prompt to avoid duplicates
+        let lastPrompt = '';
+
+        // Monitor for Enter key press
+        textarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+                console.log('Enter key pressed');
+                setTimeout(() => {
+                    const currentPrompt = textarea.value || textarea.textContent || textarea.innerText;
+                    if (currentPrompt && currentPrompt.trim() && currentPrompt !== lastPrompt) {
+                        lastPrompt = currentPrompt;
+                        capturePrompt(currentPrompt.trim());
+                    }
+                }, 100);
+            }
+        });
+
+        // Monitor for send button clicks
+        function monitorSendButtons() {
             const sendButtonSelectors = [
                 'button[data-testid="send-button"]',
                 'button[aria-label*="Send"]',
+                'button[aria-label*="send"]',
                 '[data-testid="fruitjuice-send-button"]',
+                'button:has(svg)',
                 'button svg[data-testid="send-button"]',
-                'button:has(svg[data-testid="send-button"])'
+                'button:has([data-testid="send-button"])',
+                'form button[type="submit"]',
+                'button[type="submit"]'
             ];
 
             sendButtonSelectors.forEach(selector => {
@@ -66,39 +103,53 @@
                 buttons.forEach(button => {
                     if (!button.hasAttribute('data-prompt-listener')) {
                         button.setAttribute('data-prompt-listener', 'true');
-                        button.addEventListener('click', function() {
+                        console.log('Added listener to send button');
+                        
+                        button.addEventListener('click', function(e) {
+                            console.log('Send button clicked');
                             setTimeout(() => {
-                                const textarea = document.querySelector(textareaSelector);
-                                if (textarea) {
-                                    const promptText = textarea.value || textarea.textContent;
-                                    if (promptText && promptText.trim()) {
-                                        capturePrompt(promptText.trim());
-                                    }
+                                const currentPrompt = textarea.value || textarea.textContent || textarea.innerText;
+                                if (currentPrompt && currentPrompt.trim() && currentPrompt !== lastPrompt) {
+                                    lastPrompt = currentPrompt;
+                                    capturePrompt(currentPrompt.trim());
                                 }
                             }, 100);
                         });
                     }
                 });
             });
-
-            // Re-monitor every 2 seconds for dynamically added elements
-            setTimeout(monitorSubmissions, 2000);
         }
 
-        monitorSubmissions();
+        monitorSendButtons();
+
+        // Re-monitor for dynamically added buttons every 3 seconds
+        setInterval(() => {
+            monitorSendButtons();
+            
+            // Also check if textarea still exists, if not, restart monitoring
+            if (!document.contains(textarea)) {
+                console.log('Textarea no longer exists, restarting monitoring...');
+                setTimeout(setupPromptMonitoring, 1000);
+            }
+        }, 3000);
     }
 
     // Initialize monitoring when page loads
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupPromptMonitoring);
-    } else {
-        setupPromptMonitoring();
+    function initialize() {
+        console.log('Initializing ChatGPT Prompt Capture...');
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupPromptMonitoring);
+        } else {
+            setupPromptMonitoring();
+        }
     }
 
     // Listen for messages from popup
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        console.log('Received message:', request);
         if (request.action === 'toggleCapture') {
             isCapturing = request.enabled;
+            console.log('Capture toggled:', isCapturing);
             sendResponse({success: true});
         } else if (request.action === 'getStatus') {
             sendResponse({
@@ -108,14 +159,18 @@
         }
     });
 
-    // Also monitor for navigation changes in SPA
+    // Monitor for navigation changes in SPA
     let lastUrl = location.href;
     new MutationObserver(() => {
         const url = location.href;
         if (url !== lastUrl) {
             lastUrl = url;
-            setTimeout(setupPromptMonitoring, 1000);
+            console.log('URL changed, reinitializing...');
+            setTimeout(initialize, 2000);
         }
     }).observe(document, {subtree: true, childList: true});
+
+    // Start the extension
+    initialize();
 
 })();
