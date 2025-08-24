@@ -79,14 +79,22 @@ Prompt: How do I create a Chrome extension?
 1. **Refresh the ChatGPT page** and try again
 2. **Check the extension popup** - make sure status shows "Active"
 3. **Verify you're on the correct site**: chat.openai.com or chatgpt.com
-4. **Check browser console** (F12) for any error messages
+4. **Open browser console** (Press F12, go to Console tab) and look for messages starting with "ChatGPT Prompt Capture"
 5. **Try disabling and re-enabling** the extension in the popup
+6. **Reload the extension**: Go to chrome://extensions/, find the extension, and click the reload button
+7. **Wait a few seconds** after loading ChatGPT before trying to send prompts
 
 ### Extension Won't Load?
 1. **Make sure all files are in the same folder**
 2. **Check that Developer Mode is enabled** in chrome://extensions/
 3. **Try removing and re-adding** the extension
 4. **Check Chrome version** - requires Chrome 88 or newer
+
+### Popup Shows "Loading..." or Connection Errors?
+1. **Refresh the ChatGPT page** - the content script needs to load
+2. **Wait 5-10 seconds** after opening ChatGPT before checking the popup
+3. **Make sure you're on the main ChatGPT chat page**, not just the homepage
+4. **Try opening a new chat** if you're on an existing conversation
 
 ### Files Not Saving?
 1. **Check Downloads permissions** in Chrome settings
