@@ -1,16 +1,18 @@
 {
   "manifest_version": 3,
   "name": "ChatGPT Prompt Capture",
-  "version": "1.0",
-  "description": "Automatically captures and saves ChatGPT user prompts as text files",
+  "version": "2.0",
+  "description": "Automatically captures and saves your ChatGPT prompts as text files. Enhanced detection and reliability.",
   "permissions": [
     "activeTab",
     "storage",
-    "downloads"
+    "downloads",
+    "contextMenus"
   ],
   "host_permissions": [
     "https://chat.openai.com/*",
-    "https://chatgpt.com/*"
+    "https://chatgpt.com/*",
+    "https://*.openai.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -19,14 +21,22 @@
     {
       "matches": [
         "https://chat.openai.com/*",
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://*.openai.com/*"
       ],
       "js": ["content.js"],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "all_frames": false
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ChatGPT Prompt Capture"
-  }
+    "default_title": "ChatGPT Prompt Capture - Click to view status"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["*.js"],
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+    }
+  ]
 }

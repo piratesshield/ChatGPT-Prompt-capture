@@ -4,38 +4,71 @@
     <meta charset="utf-8">
     <style>
         body {
-            width: 300px;
-            padding: 20px;
+            width: 350px;
+            padding: 16px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            background: #f8fafc;
         }
+        
         .header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
         }
+        
         .header h1 {
             margin: 0;
             font-size: 18px;
-            color: #333;
+            font-weight: 600;
+            color: #1e293b;
         }
-        .status {
+        
+        .status-section {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .status-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
+        
+        .status-info {
+            display: flex;
+            align-items: center;
+        }
+        
         .status-indicator {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             margin-right: 8px;
+            transition: all 0.3s ease;
         }
+        
         .status-indicator.active {
             background-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
         }
+        
         .status-indicator.inactive {
             background-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
         }
+        
+        .status-text {
+            font-weight: 500;
+            color: #374151;
+        }
+        
         .toggle-btn {
             background-color: #3b82f6;
             color: white;
@@ -44,53 +77,149 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
+        
         .toggle-btn:hover {
             background-color: #2563eb;
+            transform: translateY(-1px);
         }
+        
         .toggle-btn.inactive {
             background-color: #6b7280;
         }
-        .stats {
-            background-color: #f3f4f6;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 15px;
+        
+        .toggle-btn.inactive:hover {
+            background-color: #4b5563;
         }
-        .stats h3 {
+        
+        .toggle-btn:disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .file-location {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .file-location h3 {
             margin: 0 0 8px 0;
             font-size: 14px;
-            color: #374151;
+            font-weight: 600;
+            color: #1e293b;
         }
-        .stats p {
+        
+        .file-path {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #475569;
+            background: white;
+            padding: 6px 8px;
+            border-radius: 4px;
             margin: 4px 0;
-            font-size: 12px;
-            color: #6b7280;
+            word-break: break-all;
         }
+        
         .instructions {
-            margin-top: 15px;
+            background: #fef3c7;
+            border-radius: 8px;
             padding: 12px;
-            background-color: #fef3c7;
-            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .instructions h3 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #92400e;
+        }
+        
+        .instructions ul {
+            margin: 0;
+            padding-left: 16px;
             font-size: 12px;
             color: #92400e;
         }
-        .file-info {
-            margin-top: 15px;
-            padding: 12px;
-            background-color: #e0f2fe;
-            border-radius: 6px;
-            font-size: 11px;
-            color: #0369a1;
+        
+        .instructions li {
+            margin-bottom: 4px;
         }
-        .file-info h3 {
+        
+        .debug-info {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+        
+        .debug-info h3 {
             margin: 0 0 8px 0;
             font-size: 12px;
-            color: #0c4a6e;
+            font-weight: 600;
+            color: #374151;
         }
-        .file-info p {
-            margin: 2px 0;
-            font-family: monospace;
+        
+        .debug-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            color: #dc2626;
+            font-size: 12px;
+        }
+        
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            color: #16a34a;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -99,34 +228,68 @@
         <h1>ChatGPT Prompt Capture</h1>
     </div>
     
-    <div class="status">
-        <div style="display: flex; align-items: center;">
-            <div class="status-indicator" id="statusIndicator"></div>
-            <span id="statusText">Checking...</span>
+    <div class="status-section">
+        <div class="status-row">
+            <div class="status-info">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span class="status-text" id="statusText">Checking...</span>
+            </div>
+            <button class="toggle-btn" id="toggleBtn" disabled>Loading...</button>
         </div>
-        <button class="toggle-btn" id="toggleBtn">Toggle</button>
+        <div id="statusMessage" style="font-size: 12px; color: #64748b; margin-top: 8px;"></div>
     </div>
     
-    <div class="stats">
-        <h3>Session Stats</h3>
-        <p>Prompts captured: <span id="promptCount">0</span></p>
-        <p>Status: <span id="captureStatus">Loading...</span></p>
-        <p>Files saved to: <span id="filePath">Downloads/chatgpt-prompts/</span></p>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number" id="promptCount">0</div>
+            <div class="stat-label">Prompts Captured</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="sessionTime">0m</div>
+            <div class="stat-label">Session Time</div>
+        </div>
     </div>
     
-    <div class="file-info">
-        <h3>File Location</h3>
-        <p><strong>Windows:</strong> C:\Users\[Username]\Downloads\chatgpt-prompts\</p>
-        <p><strong>Mac:</strong> /Users/[Username]/Downloads/chatgpt-prompts/</p>
-        <p><strong>Linux:</strong> /home/[Username]/Downloads/chatgpt-prompts/</p>
+    <div class="file-location">
+        <h3>📁 Files Saved To:</h3>
+        <div class="file-path" id="currentPath">Downloads/chatgpt-prompts/</div>
+        <details style="margin-top: 8px;">
+            <summary style="font-size: 12px; color: #64748b; cursor: pointer;">Show all platforms</summary>
+            <div style="margin-top: 8px;">
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;"><strong>Windows:</strong></div>
+                <div class="file-path">C:\Users\[Username]\Downloads\chatgpt-prompts\</div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;"><strong>Mac:</strong></div>
+                <div class="file-path">/Users/[Username]/Downloads/chatgpt-prompts/</div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;"><strong>Linux:</strong></div>
+                <div class="file-path">/home/[Username]/Downloads/chatgpt-prompts/</div>
+            </div>
+        </details>
     </div>
     
     <div class="instructions">
-        <strong>How it works:</strong><br>
-        • Visit chat.openai.com or chatgpt.com<br>
-        • Type and send prompts normally<br>
-        • Files are saved to Downloads/chatgpt-prompts/<br>
-        • Only your prompts are captured, not AI responses
+        <h3>🚀 Quick Start:</h3>
+        <ul>
+            <li>Make sure you're on chat.openai.com or chatgpt.com</li>
+            <li>Type a message and press Enter or click Send</li>
+            <li>Check your Downloads folder for saved prompts</li>
+            <li>Open browser console (F12) to see capture logs</li>
+        </ul>
+    </div>
+    
+    <div class="debug-info" id="debugInfo" style="display: none;">
+        <h3>Debug Information:</h3>
+        <div class="debug-row">
+            <span>Current URL:</span>
+            <span id="currentUrl">-</span>
+        </div>
+        <div class="debug-row">
+            <span>Extension Status:</span>
+            <span id="extensionStatus">-</span>
+        </div>
+        <div class="debug-row">
+            <span>Last Update:</span>
+            <span id="lastUpdate">-</span>
+        </div>
     </div>
     
     <script src="popup.js"></script>

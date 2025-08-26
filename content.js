@@ -1,267 +1,300 @@
-// Content script to capture ChatGPT prompts
+// Enhanced ChatGPT Prompt Capture Content Script
 (function() {
+    'use strict';
+    
     let isCapturing = true;
     let promptCounter = 0;
-    let isInitialized = false;
-    let lastPromptText = '';
-    let lastSubmissionTime = 0;
+    let lastCapturedPrompt = '';
+    let lastCaptureTime = 0;
+    let observer = null;
+    
+    console.log('🚀 ChatGPT Prompt Capture Extension v2.0 loaded');
 
-    console.log('ChatGPT Prompt Capture Extension loaded');
+    // Enhanced selectors for ChatGPT's current interface
+    const TEXTAREA_SELECTORS = [
+        'textarea[placeholder*="Message"]',
+        'textarea[data-id="root"]',
+        'div[contenteditable="true"][data-testid="textbox"]',
+        'div[contenteditable="true"]',
+        'textarea',
+        '#prompt-textarea',
+        '[data-testid="textbox"]'
+    ];
 
-    // Function to get current timestamp
+    const SEND_BUTTON_SELECTORS = [
+        'button[data-testid="send-button"]',
+        'button[data-testid="fruitjuice-send-button"]',
+        'button[aria-label*="Send"]',
+        'button svg[data-testid="send-button"]',
+        'form button[type="submit"]',
+        'button:has(svg)',
+        '[data-testid="send-button"]'
+    ];
+
+    // Get current timestamp for filename
     function getTimestamp() {
-        return new Date().toISOString().replace(/[:.]/g, '-');
+        const now = new Date();
+        return now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
     }
 
-    // Function to capture prompt text
-    function capturePrompt(promptText) {
-        if (!promptText.trim() || !isCapturing) return;
-        
-        // Prevent duplicate captures
-        const now = Date.now();
-        if (promptText === lastPromptText && (now - lastSubmissionTime) < 3000) {
-            console.log('Duplicate prompt detected, skipping...');
-            return;
-        }
-        
-        lastPromptText = promptText;
-        lastSubmissionTime = now;
-        promptCounter++;
-        
-        const timestamp = getTimestamp();
-        const filename = `chatgpt-prompt-${timestamp}.txt`;
-        
-        console.log('🎯 CAPTURING PROMPT:', promptText.substring(0, 100) + '...');
-        console.log('📁 Saving to:', filename);
-        
-        // Send to background script for file saving
-        chrome.runtime.sendMessage({
-            action: 'savePrompt',
-            prompt: promptText,
-            filename: filename,
-            timestamp: new Date().toISOString()
-        }, (response) => {
-            if (chrome.runtime.lastError) {
-                console.error('❌ Error sending message to background:', chrome.runtime.lastError);
-            } else {
-                console.log('✅ Prompt saved successfully');
-            }
-        });
-    }
-
-    // Function to find the main textarea
-    function findTextarea() {
-        const selectors = [
-            'textarea[data-id="root"]',
-            'textarea[placeholder*="Message"]',
-            'textarea[placeholder*="Send a message"]',
-            'textarea[data-testid="textbox"]',
-            '#prompt-textarea',
-            'textarea[placeholder*="message"]',
-            'div[contenteditable="true"][data-testid="textbox"]',
-            'div[contenteditable="true"]',
-            'textarea'
-        ];
-
-        for (const selector of selectors) {
-            const elements = document.querySelectorAll(selector);
-            for (const element of elements) {
-                const rect = element.getBoundingClientRect();
-                const isVisible = rect.width > 50 && rect.height > 20 && 
-                                rect.top >= 0 && rect.left >= 0;
-                
-                if (isVisible) {
-                    console.log('✅ Found textarea with selector:', selector);
-                    return element;
-                }
-            }
-        }
-        return null;
-    }
-
-    // Function to get text from element
-    function getTextFromElement(element) {
+    // Extract text from various element types
+    function extractText(element) {
         if (!element) return '';
         
-        // For regular textareas
         if (element.tagName === 'TEXTAREA') {
             return element.value || '';
         }
         
-        // For contenteditable divs
         if (element.contentEditable === 'true') {
+            // For contenteditable divs, get plain text
             return element.textContent || element.innerText || '';
         }
         
         return element.value || element.textContent || element.innerText || '';
     }
 
-    // Function to setup monitoring on the textarea
-    function setupTextareaMonitoring(textarea) {
-        if (!textarea) return false;
-
-        console.log('🔧 Setting up monitoring on textarea...');
-
-        // Store reference to current prompt
-        let currentPrompt = '';
-
-        // Function to capture current prompt
-        function captureCurrentPrompt() {
-            const text = getTextFromElement(textarea);
-            if (text && text.trim() && text !== currentPrompt) {
-                currentPrompt = text;
-                console.log('📝 Prompt ready for capture:', text.substring(0, 50) + '...');
-                
-                // Capture after a short delay to ensure it's the final text
-                setTimeout(() => {
-                    capturePrompt(text.trim());
-                }, 500);
-            }
+    // Save prompt to file
+    function savePrompt(promptText) {
+        if (!promptText || !promptText.trim() || !isCapturing) {
+            console.log('❌ Prompt empty or capturing disabled');
+            return;
         }
 
-        // Monitor Enter key (most common way to submit)
-        textarea.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                console.log('⌨️ Enter key pressed - capturing prompt');
-                captureCurrentPrompt();
+        const cleanPrompt = promptText.trim();
+        const now = Date.now();
+        
+        // Prevent duplicate captures (within 2 seconds)
+        if (cleanPrompt === lastCapturedPrompt && (now - lastCaptureTime) < 2000) {
+            console.log('⚠️ Duplicate prompt detected, skipping');
+            return;
+        }
+
+        lastCapturedPrompt = cleanPrompt;
+        lastCaptureTime = now;
+        promptCounter++;
+
+        const timestamp = getTimestamp();
+        const filename = `chatgpt-prompt-${timestamp}.txt`;
+        
+        console.log(`🎯 CAPTURING PROMPT #${promptCounter}:`);
+        console.log(`📝 Text: "${cleanPrompt.substring(0, 100)}${cleanPrompt.length > 100 ? '...' : ''}"`);
+        console.log(`💾 Filename: ${filename}`);
+
+        // Send to background script
+        chrome.runtime.sendMessage({
+            action: 'savePrompt',
+            prompt: cleanPrompt,
+            filename: filename,
+            timestamp: new Date().toISOString(),
+            counter: promptCounter
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error('❌ Failed to save prompt:', chrome.runtime.lastError.message);
+            } else if (response && response.success) {
+                console.log('✅ Prompt saved successfully!');
+                console.log(`📁 Saved to: Downloads/chatgpt-prompts/${filename}`);
+            } else {
+                console.error('❌ Background script failed to save prompt');
             }
         });
+    }
 
-        // Monitor for input changes
-        textarea.addEventListener('input', function() {
-            currentPrompt = getTextFromElement(textarea);
-        });
+    // Find the main input element
+    function findInputElement() {
+        for (const selector of TEXTAREA_SELECTORS) {
+            const elements = document.querySelectorAll(selector);
+            for (const element of elements) {
+                const rect = element.getBoundingClientRect();
+                const isVisible = rect.width > 50 && rect.height > 20 && 
+                                rect.top >= 0 && rect.left >= 0 &&
+                                getComputedStyle(element).display !== 'none';
+                
+                if (isVisible) {
+                    console.log(`✅ Found input element: ${selector}`);
+                    return element;
+                }
+            }
+        }
+        console.log('❌ No input element found');
+        return null;
+    }
 
-        // Monitor for paste events
-        textarea.addEventListener('paste', function() {
-            setTimeout(() => {
-                currentPrompt = getTextFromElement(textarea);
-            }, 100);
+    // Find send buttons
+    function findSendButtons() {
+        const buttons = [];
+        for (const selector of SEND_BUTTON_SELECTORS) {
+            try {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(button => {
+                    const rect = button.getBoundingClientRect();
+                    const isVisible = rect.width > 10 && rect.height > 10 && 
+                                    rect.top >= 0 && rect.left >= 0 &&
+                                    getComputedStyle(button).display !== 'none';
+                    
+                    if (isVisible && !button.hasAttribute('data-prompt-listener')) {
+                        buttons.push(button);
+                    }
+                });
+            } catch (error) {
+                console.log(`⚠️ Error with selector ${selector}:`, error);
+            }
+        }
+        console.log(`🔘 Found ${buttons.length} send buttons`);
+        return buttons;
+    }
+
+    // Setup input monitoring
+    function setupInputMonitoring(inputElement) {
+        if (!inputElement) return false;
+
+        console.log('🔧 Setting up input monitoring...');
+
+        // Monitor Enter key
+        inputElement.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                console.log('⌨️ Enter key detected');
+                const text = extractText(inputElement);
+                if (text && text.trim()) {
+                    console.log('📤 Capturing prompt from Enter key');
+                    setTimeout(() => savePrompt(text), 100);
+                }
+            }
+        }, true);
+
+        // Monitor input changes for debugging
+        inputElement.addEventListener('input', function() {
+            const text = extractText(inputElement);
+            if (text && text.length > 10) {
+                console.log(`📝 Input detected: "${text.substring(0, 50)}..."`);
+            }
         });
 
         return true;
     }
 
-    // Function to find and monitor send buttons
-    function monitorSendButtons() {
-        const sendSelectors = [
-            'button[data-testid="send-button"]',
-            'button[aria-label*="Send"]',
-            'button[aria-label*="send"]',
-            'button:has(svg[data-testid="send-button"])',
-            'button[type="submit"]',
-            'form button[type="submit"]',
-            'button svg[viewBox="0 0 24 24"]',
-            'button[class*="send"]'
-        ];
+    // Setup button monitoring
+    function setupButtonMonitoring() {
+        const buttons = findSendButtons();
+        let setupCount = 0;
 
-        let buttonsFound = 0;
-
-        sendSelectors.forEach(selector => {
-            try {
-                const buttons = document.querySelectorAll(selector);
-                buttons.forEach(button => {
-                    if (!button.hasAttribute('data-prompt-capture-listener')) {
-                        button.setAttribute('data-prompt-capture-listener', 'true');
-                        
-                        button.addEventListener('click', function(e) {
-                            console.log('🖱️ Send button clicked');
-                            
-                            // Find the textarea and capture its content
-                            const textarea = findTextarea();
-                            if (textarea) {
-                                const text = getTextFromElement(textarea);
-                                if (text && text.trim()) {
-                                    console.log('📤 Capturing prompt from button click');
-                                    setTimeout(() => capturePrompt(text.trim()), 200);
-                                }
-                            }
-                        });
-                        
-                        buttonsFound++;
-                        console.log('✅ Added listener to send button:', selector);
+        buttons.forEach(button => {
+            if (!button.hasAttribute('data-prompt-listener')) {
+                button.setAttribute('data-prompt-listener', 'true');
+                
+                button.addEventListener('click', function(event) {
+                    console.log('🖱️ Send button clicked');
+                    
+                    // Find input and capture its content
+                    const inputElement = findInputElement();
+                    if (inputElement) {
+                        const text = extractText(inputElement);
+                        if (text && text.trim()) {
+                            console.log('📤 Capturing prompt from button click');
+                            setTimeout(() => savePrompt(text), 100);
+                        } else {
+                            console.log('⚠️ No text found in input element');
+                        }
+                    } else {
+                        console.log('❌ No input element found for button click');
                     }
-                });
-            } catch (error) {
-                console.log('⚠️ Error with selector:', selector, error);
+                }, true);
+                
+                setupCount++;
             }
         });
 
-        console.log(`🔘 Found ${buttonsFound} send buttons`);
-        return buttonsFound > 0;
+        console.log(`✅ Setup monitoring on ${setupCount} buttons`);
+        return setupCount > 0;
     }
 
-    // Main setup function
-    function setupPromptMonitoring() {
-        console.log('🚀 Setting up ChatGPT prompt monitoring...');
+    // Main initialization function
+    function initializeCapture() {
+        console.log('🎬 Initializing ChatGPT prompt capture...');
         
-        // Find the main textarea
-        const textarea = findTextarea();
+        // Check if we're on the right page
+        const isValidPage = window.location.hostname.includes('openai.com') || 
+                           window.location.hostname.includes('chatgpt.com');
         
-        if (!textarea) {
-            console.log('❌ Textarea not found, retrying in 3 seconds...');
-            setTimeout(setupPromptMonitoring, 3000);
+        if (!isValidPage) {
+            console.log('❌ Not on a valid ChatGPT page');
             return;
         }
 
-        // Setup textarea monitoring
-        const textareaSuccess = setupTextareaMonitoring(textarea);
+        console.log('✅ On valid ChatGPT page:', window.location.href);
+
+        // Find and setup input monitoring
+        const inputElement = findInputElement();
+        const inputSetup = setupInputMonitoring(inputElement);
         
         // Setup button monitoring
-        const buttonsSuccess = monitorSendButtons();
+        const buttonSetup = setupButtonMonitoring();
         
-        if (textareaSuccess || buttonsSuccess) {
-            isInitialized = true;
-            console.log('✅ Prompt monitoring setup complete!');
+        if (inputSetup || buttonSetup) {
+            console.log('✅ Prompt capture initialized successfully!');
             
-            // Re-scan for new buttons every 5 seconds
-            setInterval(() => {
-                monitorSendButtons();
+            // Setup mutation observer to handle dynamic content
+            if (observer) observer.disconnect();
+            
+            observer = new MutationObserver((mutations) => {
+                let shouldReinitialize = false;
                 
-                // Check if textarea still exists
-                if (!document.contains(textarea)) {
-                    console.log('🔄 Textarea removed, restarting monitoring...');
-                    isInitialized = false;
-                    setTimeout(setupPromptMonitoring, 2000);
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        // Check if new buttons or inputs were added
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                const hasNewButtons = SEND_BUTTON_SELECTORS.some(selector => 
+                                    node.matches && node.matches(selector) || 
+                                    node.querySelector && node.querySelector(selector)
+                                );
+                                const hasNewInputs = TEXTAREA_SELECTORS.some(selector => 
+                                    node.matches && node.matches(selector) || 
+                                    node.querySelector && node.querySelector(selector)
+                                );
+                                
+                                if (hasNewButtons || hasNewInputs) {
+                                    shouldReinitialize = true;
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                if (shouldReinitialize) {
+                    console.log('🔄 DOM changed, reinitializing...');
+                    setTimeout(setupButtonMonitoring, 500);
                 }
-            }, 5000);
-        } else {
-            console.log('❌ Failed to setup monitoring, retrying...');
-            setTimeout(setupPromptMonitoring, 3000);
-        }
-    }
-
-    // Initialize the extension
-    function initialize() {
-        console.log('🎬 Initializing ChatGPT Prompt Capture Extension...');
-        
-        // Wait for page to be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(setupPromptMonitoring, 2000);
             });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
         } else {
-            setTimeout(setupPromptMonitoring, 2000);
+            console.log('❌ Failed to initialize, retrying in 3 seconds...');
+            setTimeout(initializeCapture, 3000);
         }
     }
 
-    // Listen for messages from popup
+    // Message listener for popup communication
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log('📨 Content script received message:', request);
         
         try {
-            if (request.action === 'toggleCapture') {
-                isCapturing = request.enabled;
-                console.log('🔄 Capture toggled:', isCapturing ? 'ON' : 'OFF');
-                sendResponse({success: true, isCapturing: isCapturing});
-            } else if (request.action === 'getStatus') {
+            if (request.action === 'getStatus') {
                 const status = {
                     isCapturing: isCapturing,
                     promptCounter: promptCounter,
-                    isInitialized: isInitialized
+                    isInitialized: true,
+                    currentUrl: window.location.href
                 };
                 console.log('📊 Sending status:', status);
                 sendResponse(status);
+            } else if (request.action === 'toggleCapture') {
+                isCapturing = request.enabled;
+                console.log(`🔄 Capture ${isCapturing ? 'ENABLED' : 'DISABLED'}`);
+                sendResponse({success: true, isCapturing: isCapturing});
             }
         } catch (error) {
             console.error('❌ Error handling message:', error);
@@ -271,27 +304,36 @@
         return true;
     });
 
-    // Monitor for navigation changes (SPA)
-    let lastUrl = location.href;
-    new MutationObserver(() => {
-        const url = location.href;
-        if (url !== lastUrl) {
-            lastUrl = url;
+    // Handle page navigation (SPA)
+    let currentUrl = window.location.href;
+    const urlObserver = new MutationObserver(() => {
+        if (window.location.href !== currentUrl) {
+            currentUrl = window.location.href;
             console.log('🔄 URL changed, reinitializing...');
-            isInitialized = false;
-            setTimeout(initialize, 3000);
+            setTimeout(initializeCapture, 2000);
         }
-    }).observe(document, {subtree: true, childList: true});
+    });
+    
+    urlObserver.observe(document, {subtree: true, childList: true});
 
-    // Start the extension
-    initialize();
+    // Start initialization
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeCapture, 2000);
+        });
+    } else {
+        setTimeout(initializeCapture, 1000);
+    }
 
-    // Debug: Log page info
+    // Debug information
     setTimeout(() => {
-        console.log('🌐 Page URL:', window.location.href);
-        console.log('📄 Page title:', document.title);
-        console.log('🔍 Available textareas:', document.querySelectorAll('textarea').length);
-        console.log('🔍 Available contenteditable:', document.querySelectorAll('[contenteditable="true"]').length);
+        console.log('🔍 DEBUG INFO:');
+        console.log('📍 URL:', window.location.href);
+        console.log('📄 Title:', document.title);
+        console.log('🔤 Textareas found:', document.querySelectorAll('textarea').length);
+        console.log('📝 Contenteditable found:', document.querySelectorAll('[contenteditable="true"]').length);
+        console.log('🔘 Buttons found:', document.querySelectorAll('button').length);
+        console.log('🎯 Extension status: Capturing =', isCapturing, ', Counter =', promptCounter);
     }, 3000);
 
 })();
