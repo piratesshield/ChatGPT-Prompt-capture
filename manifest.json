@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "ChatGPT Prompt Capture",
-  "version": "2.0",
-  "description": "Automatically captures and saves your ChatGPT prompts as text files. Enhanced detection and reliability.",
+  "version": "2.1",
+  "description": "Automatically captures and saves your ChatGPT prompts as text files. Enhanced detection and reliability for 2025 ChatGPT interface.",
   "permissions": [
     "activeTab",
     "storage",
     "downloads",
-    "contextMenus"
+    "contextMenus",
+    "notifications"
   ],
   "host_permissions": [
     "https://chat.openai.com/*",
@@ -36,7 +37,12 @@
   "web_accessible_resources": [
     {
       "resources": ["*.js"],
-      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*", "https://*.openai.com/*"]
     }
-  ]
+  ],
+  "icons": {
+    "16": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiByeD0iMiIgZmlsbD0iIzE2YTM0YSIvPgo8cGF0aCBkPSJNNCA4aDh2MUg0VjhaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNCA1aDZ2MUg0VjVaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNCA2aDV2MUg0VjZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K",
+    "32": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNCIgZmlsbD0iIzE2YTM0YSIvPgo8cGF0aCBkPSJNOCAxNmgxNnYySDhWMTZaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNOCAxMGgxMnYySDhWMTBaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNOCAxM2gxMHYySDhWMTNaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K",
+    "48": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iNiIgZmlsbD0iIzE2YTM0YSIvPgo8cGF0aCBkPSJNMTIgMjRoMjR2M0gxMlYyNFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xMiAxNWgxOHYzSDEyVjE1WiIgZmlsbD0id2hpdGUiLz4KPHA="
+  }
 }
