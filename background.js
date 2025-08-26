@@ -12,8 +12,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function savePromptToFile(promptText, filename, timestamp) {
     console.log('Saving prompt to file:', filename);
+    console.log('Full file path will be: Downloads/chatgpt-prompts/' + filename);
     
-    const content = `Timestamp: ${timestamp}\nPrompt: ${promptText}\n\n${'='.repeat(50)}\n\n`;
+    const content = `Timestamp: ${timestamp}
+Prompt: ${promptText}
+
+${'='.repeat(50)}
+
+`;
     
     // Create blob with the prompt content
     const blob = new Blob([content], {type: 'text/plain'});

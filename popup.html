@@ -75,6 +75,23 @@
             font-size: 12px;
             color: #92400e;
         }
+        .file-info {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #e0f2fe;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #0369a1;
+        }
+        .file-info h3 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: #0c4a6e;
+        }
+        .file-info p {
+            margin: 2px 0;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -94,6 +111,14 @@
         <h3>Session Stats</h3>
         <p>Prompts captured: <span id="promptCount">0</span></p>
         <p>Status: <span id="captureStatus">Loading...</span></p>
+        <p>Files saved to: <span id="filePath">Downloads/chatgpt-prompts/</span></p>
+    </div>
+    
+    <div class="file-info">
+        <h3>File Location</h3>
+        <p><strong>Windows:</strong> C:\Users\[Username]\Downloads\chatgpt-prompts\</p>
+        <p><strong>Mac:</strong> /Users/[Username]/Downloads/chatgpt-prompts/</p>
+        <p><strong>Linux:</strong> /home/[Username]/Downloads/chatgpt-prompts/</p>
     </div>
     
     <div class="instructions">
