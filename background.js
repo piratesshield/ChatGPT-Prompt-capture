@@ -193,24 +193,36 @@ chrome.runtime.onInstalled.addListener((details) => {
         });
     }
     
-    // Create enhanced context menu
-    chrome.contextMenus.removeAll(() => {
-        chrome.contextMenus.create({
-            id: 'toggle-capture',
-            title: 'Toggle ChatGPT Prompt Capture',
-            contexts: ['page'],
-            documentUrlPatterns: ['*://chat.openai.com/*', '*://chatgpt.com/*', '*://*.openai.com/*']
+    // Create enhanced context menu - with error handling
+    try {
+        chrome.contextMenus.removeAll(() => {
+            chrome.contextMenus.create({
+                id: 'toggle-capture',
+                title: 'Toggle ChatGPT Prompt Capture',
+                contexts: ['page'],
+                documentUrlPatterns: ['*://chat.openai.com/*', '*://chatgpt.com/*', '*://*.openai.com/*']
+            }, () => {
+                if (chrome.runtime.lastError) {
+                    console.warn('⚠️ Could not create toggle context menu:', chrome.runtime.lastError);
+                }
+            });
+            
+            chrome.contextMenus.create({
+                id: 'open-downloads',
+                title: 'Open ChatGPT Prompts Folder',
+                contexts: ['page'],
+                documentUrlPatterns: ['*://chat.openai.com/*', '*://chatgpt.com/*', '*://*.openai.com/*']
+            }, () => {
+                if (chrome.runtime.lastError) {
+                    console.warn('⚠️ Could not create downloads context menu:', chrome.runtime.lastError);
+                } else {
+                    console.log('📋 Context menus created successfully');
+                }
+            });
         });
-        
-        chrome.contextMenus.create({
-            id: 'open-downloads',
-            title: 'Open ChatGPT Prompts Folder',
-            contexts: ['page'],
-            documentUrlPatterns: ['*://chat.openai.com/*', '*://chatgpt.com/*', '*://*.openai.com/*']
-        });
-        
-        console.log('📋 Context menus created');
-    });
+    } catch (error) {
+        console.warn('⚠️ Context menu creation failed:', error);
+    }
 });
 
 // Enhanced context menu click handler
@@ -260,14 +272,22 @@ chrome.downloads.onChanged.addListener((delta) => {
         if (delta.state && delta.state.current === 'complete') {
             console.log('✅ ChatGPT prompt file saved successfully:', delta.filename.current);
             
-            // Show success notification (optional)
-            if (chrome.notifications) {
-                chrome.notifications.create({
-                    type: 'basic',
-                    iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiMxNmEzNGEiLz4KPHBhdGggZD0iTTM0IDEybC04IDggTDEwIDEyIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz4KPC9zdmc+',
-                    title: 'ChatGPT Prompt Saved',
-                    message: `Prompt saved to Downloads folder`
-                });
+            // Show success notification (optional) - with error handling
+            try {
+                if (chrome.notifications) {
+                    chrome.notifications.create({
+                        type: 'basic',
+                        iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAGFSURBVFhH7ZY9SwNBEIafgJ2FjY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlY2NlYKNjY2NjY2NjY2NjY2NjY2NjY2NjY2Nj',
+                        title: 'ChatGPT Prompt Saved',
+                        message: `Prompt saved to Downloads folder`
+                    }, (notificationId) => {
+                        if (chrome.runtime.lastError) {
+                            console.warn('⚠️ Could not show notification:', chrome.runtime.lastError);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.warn('⚠️ Notification failed:', error);
             }
         } else if (delta.error && delta.error.current) {
             console.error('❌ Download error:', delta.error.current);
@@ -280,28 +300,40 @@ chrome.downloads.onErased.addListener((downloadId) => {
     console.log('🗑️ Download erased:', downloadId);
 });
 
-// Alarm for periodic cleanup (optional)
-chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === 'cleanup') {
-        console.log('🧹 Running periodic cleanup...');
-        
-        // Clean up old storage data if needed
-        chrome.storage.sync.get(null, (items) => {
-            console.log('📊 Current storage usage:', Object.keys(items).length, 'items');
-        });
-    }
-});
-
-// Set up periodic cleanup alarm (once per day)
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.alarms.create('cleanup', { periodInMinutes: 1440 }); // 24 hours
-});
-
-// Error handling for unhandled promise rejections
-if (typeof process !== 'undefined' && process.on) {
-    process.on('unhandledRejection', (reason, promise) => {
-        console.error('❌ Unhandled Promise Rejection:', reason);
+// Alarm handling with proper error checking - simplified
+if (chrome.alarms) {
+    // Alarm for periodic cleanup (optional)
+    chrome.alarms.onAlarm.addListener((alarm) => {
+        if (alarm.name === 'cleanup') {
+            console.log('🧹 Running periodic cleanup...');
+            
+            // Clean up old storage data if needed
+            chrome.storage.sync.get(null, (items) => {
+                console.log('📊 Current storage usage:', Object.keys(items).length, 'items');
+            });
+        }
     });
+
+    // Set up periodic cleanup alarm (once per day) - only on install
+    chrome.runtime.onInstalled.addListener(() => {
+        try {
+            chrome.alarms.create('cleanup', { periodInMinutes: 1440 }); // 24 hours
+            console.log('⏰ Cleanup alarm created');
+        } catch (error) {
+            console.warn('⚠️ Could not create cleanup alarm:', error);
+        }
+    });
+} else {
+    console.warn('⚠️ Chrome alarms API not available');
 }
+
+// Global error handling
+self.addEventListener('error', (event) => {
+    console.error('❌ Global error in background script:', event.error);
+});
+
+self.addEventListener('unhandledrejection', (event) => {
+    console.error('❌ Unhandled promise rejection in background script:', event.reason);
+});
 
 console.log('✅ Background script initialization complete');
