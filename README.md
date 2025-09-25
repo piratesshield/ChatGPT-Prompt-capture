@@ -40,13 +40,18 @@ This Chrome extension automatically captures and saves your ChatGPT prompts as t
 
 ## 📁 Where to Find Your Captured Prompts
 
-Your captured prompts are automatically saved to:
+Your captured prompts are stored in the extension's local storage and can be downloaded using the built-in download buttons:
 
-**Windows**: `C:\Users\[YourUsername]\Downloads\chatgpt-prompts\`
+### 📥 **Download Options:**
 
-**Mac**: `/Users/[YourUsername]/Downloads/chatgpt-prompts/`
+1. **Individual Downloads**: Click the download button (↓) next to each prompt in the "View List"
+2. **Download All**: Use the "Download All" button to get all prompts in a single file
+3. **File Location**: Downloaded files will be saved to your browser's default download location
 
-**Linux**: `/home/[YourUsername]/Downloads/chatgpt-prompts/`
+### 💾 **Storage Information:**
+- **Location**: Extension Local Storage (built into Chrome)
+- **Access**: Use the extension popup to view and download your prompts
+- **Backup**: Download your prompts regularly to keep local copies
 
 ### File Format
 Each prompt is saved as a separate text file with:
@@ -70,8 +75,16 @@ Prompt: How do I create a Chrome extension?
 2. **Check Status**: Click the extension icon to verify it's "Active"
 3. **Use ChatGPT Normally**: Type and send prompts as usual
 4. **Automatic Capture**: Your prompts are automatically saved
-5. **View Files**: Check your Downloads/chatgpt-prompts folder
+5. **Download Prompts**: Use the download buttons in the extension popup
 6. **Toggle if Needed**: Use the popup to enable/disable capturing
+
+## 📥 **New Download Features**
+
+The extension popup now includes:
+- **Download All Button**: Get all your prompts in one file
+- **View List Button**: See your recent prompts with individual download options
+- **Clear All Button**: Remove all stored prompts (with confirmation)
+- **Storage Info**: See how many prompts are stored and storage usage
 
 ## 🔧 Troubleshooting
 
@@ -85,6 +98,7 @@ Prompt: How do I create a Chrome extension?
 7. **Reload the extension**: Go to chrome://extensions/, find the extension, and click the reload button
 8. **Wait 5-10 seconds** after loading ChatGPT before trying to send prompts
 9. **Check if you see initialization messages** in console like "🚀 Setting up ChatGPT prompt monitoring"
+10. **Use the download buttons** in the extension popup to access your captured prompts
 
 ### Extension Won't Load?
 1. **Make sure all files are in the same folder**
@@ -98,17 +112,17 @@ Prompt: How do I create a Chrome extension?
 3. **Make sure you're on the main ChatGPT chat page**, not just the homepage
 4. **Try opening a new chat** if you're on an existing conversation
 
-### Files Not Saving?
-1. **Check Downloads permissions** in Chrome settings
-2. **Verify Downloads folder exists** and is writable
-3. **Check if Chrome is blocking downloads** from extensions
-4. **Try a different prompt** to test
+### Can't Find Downloaded Files?
+1. **Check your browser's default download location** (usually Downloads folder)
+2. **Use the extension popup** to download prompts directly
+3. **Check Chrome's download history** (Ctrl+J or Cmd+J)
+4. **Try the "Download All" button** for a single file with all prompts
 
 ## 🔒 Privacy & Security
 
 This extension is designed with privacy in mind:
 
-- ✅ **Local Storage Only**: All files are saved locally on your computer
+- ✅ **Local Storage Only**: All data is stored locally in your browser
 - ✅ **No External Servers**: No data is sent to any external servers
 - ✅ **No AI Response Capture**: Only captures your input, never AI responses
 - ✅ **Minimal Permissions**: Only requests necessary permissions
@@ -127,10 +141,13 @@ The extension popup shows:
 - **Status Indicator**: Green (Active) or Red (Inactive)
 - **Toggle Button**: Enable/Disable capturing
 - **Session Stats**: Number of prompts captured this session
-- **Instructions**: Quick usage guide
+- **Download Buttons**: Access your captured prompts
+- **Storage Information**: See how many prompts are stored
+- **Prompts List**: View and download individual prompts
 
 ## 🔄 Version History
 
+- **v4.0**: Added download buttons, local storage, and improved UI
 - **v1.0**: Initial release with automatic prompt capture
 - Enhanced prompt detection for better reliability
 - Improved error handling and logging
@@ -141,6 +158,7 @@ The extension popup shows:
 If you encounter issues:
 1. Check the troubleshooting section above
 2. Open Chrome DevTools (F12) and check the console for errors
+3. Use the download buttons in the extension popup to access your prompts
 3. Try refreshing the ChatGPT page
 4. Restart Chrome if needed
 
@@ -153,9 +171,16 @@ chatgpt-prompt-capture/
 ├── background.js         # Service worker for file operations
 ├── popup.html           # Extension popup interface
 ├── popup.js             # Popup functionality
+├── README.md           # This documentation
 └── README.md           # This documentation
 ```
 
+## 🎮 **Keyboard Shortcuts**
+
+- **Ctrl+T** (or Cmd+T): Toggle capture on/off
+- **Ctrl+D** (or Cmd+D): Download all prompts
+- **Ctrl+R** (or Cmd+R): Refresh extension status
+
 ---
 
-**Note**: This extension only works on ChatGPT websites and requires Chrome browser with Developer Mode enabled for installation.
+**Note**: This extension only works on ChatGPT websites and requires Chrome browser with Developer Mode enabled for installation. Your prompts are stored locally and can be downloaded using the built-in download buttons.
