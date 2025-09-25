@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Enhanced Popup loaded v2.1');
+    console.log('🚀 Enhanced Popup loaded v4.0');
     
     // DOM elements
     const statusIndicator = document.getElementById('statusIndicator');
@@ -8,22 +8,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggleBtn = document.getElementById('toggleBtn');
     const promptCount = document.getElementById('promptCount');
     const sessionTime = document.getElementById('sessionTime');
-    const currentPath = document.getElementById('currentPath');
     const debugInfo = document.getElementById('debugInfo');
     const currentUrl = document.getElementById('currentUrl');
     const extensionStatus = document.getElementById('extensionStatus');
     const lastUpdate = document.getElementById('lastUpdate');
     
-    // New debug button
-    const debugBtn = document.createElement('button');
-    debugBtn.textContent = 'Debug Info';
-    debugBtn.style.cssText = 'margin-top: 10px; padding: 5px 10px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;';
-    debugBtn.onclick = requestDebugInfo;
+    // New elements
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const viewPromptsBtn = document.getElementById('viewPromptsBtn');
+    const clearPromptsBtn = document.getElementById('clearPromptsBtn');
+    const promptsList = document.getElementById('promptsList');
+    const promptsContainer = document.getElementById('promptsContainer');
+    const storedCount = document.getElementById('storedCount');
+    const storageUsed = document.getElementById('storageUsed');
 
     let isCapturing = true;
     let startTime = Date.now();
     let sessionTimer = null;
     let statusCheckInterval = null;
+    let currentPrompts = [];
 
     // Update session timer
     function updateSessionTimer() {
@@ -37,23 +40,27 @@ document.addEventListener('DOMContentLoaded', function() {
     sessionTimer = setInterval(updateSessionTimer, 60000);
     updateSessionTimer();
 
-    // Request debug information from content script
-    function requestDebugInfo() {
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            const tab = tabs[0];
-            if (!tab) return;
-
-            chrome.tabs.sendMessage(tab.id, {action: 'debugInfo'}, function(response) {
-                if (chrome.runtime.lastError) {
-                    console.log('Debug request failed:', chrome.runtime.lastError.message);
-                } else {
-                    console.log('Debug info requested');
+    // Show feedback message
+    function showFeedback(message, isSuccess = true) {
+        const feedback = document.createElement('div');
+        feedback.className = `feedback ${isSuccess ? 'success' : 'error'}`;
+        feedback.textContent = message;
+        
+        document.body.appendChild(feedback);
+        
+        setTimeout(() => feedback.style.opacity = '1', 10);
+        
+        setTimeout(() => {
+            feedback.style.opacity = '0';
+            setTimeout(() => {
+                if (feedback.parentNode) {
+                    feedback.parentNode.removeChild(feedback);
                 }
-            });
-        });
+            }, 300);
+        }, 2000);
     }
 
-    // Enhanced UI update with better error handling
+    // Update UI with status information
     function updateUI(status, errorMessage = null) {
         const now = new Date().toLocaleTimeString();
         if (lastUpdate) lastUpdate.textContent = now;
@@ -79,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (toggleBtn) {
                 toggleBtn.disabled = false;
                 toggleBtn.textContent = status.isCapturing ? 'Disable' : 'Enable';
-                toggleBtn.className = status.isCapturing ? '' : 'inactive';
+                toggleBtn.className = status.isCapturing ? 'toggle-btn' : 'toggle-btn inactive';
             }
             
             isCapturing = status.isCapturing;
@@ -92,15 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const displayUrl = status.currentUrl.length > 60 ? 
                     status.currentUrl.substring(0, 60) + '...' : status.currentUrl;
                 currentUrl.textContent = displayUrl;
-            }
-            
-            // Show additional debug info if available
-            if (status.lastInputValue && debugInfo) {
-                const debugText = debugInfo.querySelector('p') || document.createElement('p');
-                debugText.textContent = `Last Input: ${status.lastInputValue}`;
-                if (!debugInfo.contains(debugText)) {
-                    debugInfo.appendChild(debugText);
-                }
             }
         } else {
             updateStatusDisplay('Loading', 'Initializing extension...', null);
@@ -119,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
         statusText.textContent = status;
         statusMessage.textContent = message;
         
-        // Update indicator classes
         statusIndicator.classList.remove('active', 'inactive');
         if (isActive === true) {
             statusIndicator.classList.add('active');
@@ -132,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Enhanced ChatGPT page detection
+    // Check if on ChatGPT page
     function isChatGPTPage(url) {
         if (!url) return false;
         
@@ -144,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return validDomains.some(domain => url.includes(domain));
     }
 
-    // Enhanced status checking with retry logic
+    // Get current status from content script
     function getCurrentStatus(retryCount = 0) {
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             const tab = tabs[0];
@@ -161,12 +158,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Try to get status from content script
             chrome.tabs.sendMessage(tab.id, {action: 'getStatus'}, function(response) {
                 if (chrome.runtime.lastError) {
                     console.log('Content script communication error:', chrome.runtime.lastError.message);
                     
-                    // Retry logic for content script not ready
                     if (retryCount < 3 && chrome.runtime.lastError.message.includes('Could not establish connection')) {
                         console.log(`Retrying status check... (${retryCount + 1}/3)`);
                         setTimeout(() => getCurrentStatus(retryCount + 1), 2000);
@@ -184,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Enhanced toggle functionality
+    // Toggle capture functionality
     function toggleCapture() {
         if (!toggleBtn || toggleBtn.disabled) return;
 
@@ -198,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newState = !isCapturing;
             console.log('Toggling capture to:', newState);
 
-            // Update UI immediately for responsiveness
             toggleBtn.disabled = true;
             toggleBtn.textContent = 'Updating...';
 
@@ -211,7 +205,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateUI(null, 'Failed to toggle. Try refreshing the page.');
                 } else if (response && response.success) {
                     console.log('Toggle successful:', response);
-                    // Refresh status after a short delay
                     setTimeout(getCurrentStatus, 500);
                 } else {
                     updateUI(null, 'Toggle failed. Try refreshing the page.');
@@ -220,91 +213,220 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Event listeners
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', toggleCapture);
-    }
+    // Load and display captured prompts
+    function loadCapturedPrompts() {
+        chrome.runtime.sendMessage({action: 'getPrompts'}, function(response) {
+            if (chrome.runtime.lastError) {
+                console.error('Failed to load prompts:', chrome.runtime.lastError.message);
+                return;
+            }
 
-    // Enhanced debug info toggle
-    if (statusText) {
-        statusText.addEventListener('dblclick', function() {
-            if (debugInfo) {
-                const isVisible = debugInfo.style.display !== 'none';
-                debugInfo.style.display = isVisible ? 'none' : 'block';
+            if (response && response.prompts) {
+                currentPrompts = response.prompts;
+                updatePromptsList(currentPrompts);
+                updateStorageInfo();
                 
-                if (!isVisible && !debugInfo.contains(debugBtn)) {
-                    debugInfo.appendChild(debugBtn);
+                // Update download button state
+                if (downloadAllBtn) {
+                    downloadAllBtn.disabled = currentPrompts.length === 0;
                 }
             }
         });
     }
 
-    // Update file path based on platform with better detection
-    function updateFilePath() {
-        if (!currentPath) return;
+    // Update prompts list display
+    function updatePromptsList(prompts) {
+        if (!promptsContainer) return;
+
+        if (prompts.length === 0) {
+            promptsContainer.innerHTML = '<p style="text-align: center; color: #64748b; font-size: 12px;">No prompts captured yet</p>';
+            return;
+        }
+
+        promptsContainer.innerHTML = '';
         
-        const platform = navigator.platform.toLowerCase();
-        const userAgent = navigator.userAgent.toLowerCase();
-        let path = 'Downloads/chatgpt-prompts/';
+        prompts.slice(-10).reverse().forEach(prompt => {
+            const promptItem = document.createElement('div');
+            promptItem.className = 'prompt-item';
+            
+            const promptInfo = document.createElement('div');
+            promptInfo.className = 'prompt-info';
+            
+            const promptText = document.createElement('div');
+            promptText.className = 'prompt-text';
+            promptText.textContent = prompt.prompt.substring(0, 50) + (prompt.prompt.length > 50 ? '...' : '');
+            
+            const promptTime = document.createElement('div');
+            promptTime.className = 'prompt-time';
+            promptTime.textContent = new Date(prompt.createdAt).toLocaleString();
+            
+            promptInfo.appendChild(promptText);
+            promptInfo.appendChild(promptTime);
+            
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'prompt-download';
+            downloadBtn.textContent = '↓';
+            downloadBtn.onclick = () => downloadSinglePrompt(prompt.id);
+            
+            promptItem.appendChild(promptInfo);
+            promptItem.appendChild(downloadBtn);
+            promptsContainer.appendChild(promptItem);
+        });
+    }
+
+    // Update storage information
+    function updateStorageInfo() {
+        chrome.runtime.sendMessage({action: 'getStorageInfo'}, function(response) {
+            if (response) {
+                if (storedCount) storedCount.textContent = response.promptCount || 0;
+                if (storageUsed) {
+                    const kb = Math.round((response.bytesInUse || 0) / 1024);
+                    storageUsed.textContent = kb + ' KB';
+                }
+            }
+        });
+    }
+
+    // Download single prompt
+    function downloadSinglePrompt(promptId) {
+        chrome.runtime.sendMessage({
+            action: 'downloadPrompt',
+            id: promptId
+        }, function(response) {
+            if (response && response.success) {
+                showFeedback('Prompt downloaded successfully!', true);
+            } else {
+                showFeedback('Failed to download prompt: ' + (response?.error || 'Unknown error'), false);
+            }
+        });
+    }
+
+    // Download all prompts
+    function downloadAllPrompts() {
+        if (currentPrompts.length === 0) {
+            showFeedback('No prompts to download', false);
+            return;
+        }
+
+        downloadAllBtn.disabled = true;
+        downloadAllBtn.textContent = 'Downloading...';
+
+        chrome.runtime.sendMessage({action: 'downloadAllPrompts'}, function(response) {
+            downloadAllBtn.disabled = false;
+            downloadAllBtn.textContent = 'Download All';
+
+            if (response && response.success) {
+                showFeedback(`Downloaded ${currentPrompts.length} prompts successfully!`, true);
+            } else {
+                showFeedback('Failed to download prompts: ' + (response?.error || 'Unknown error'), false);
+            }
+        });
+    }
+
+    // Clear all prompts
+    function clearAllPrompts() {
+        if (currentPrompts.length === 0) {
+            showFeedback('No prompts to clear', false);
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete all ${currentPrompts.length} captured prompts? This cannot be undone.`)) {
+            return;
+        }
+
+        clearPromptsBtn.disabled = true;
+        clearPromptsBtn.textContent = 'Clearing...';
+
+        chrome.runtime.sendMessage({action: 'clearPrompts'}, function(response) {
+            clearPromptsBtn.disabled = false;
+            clearPromptsBtn.textContent = 'Clear All';
+
+            if (response && response.success) {
+                currentPrompts = [];
+                updatePromptsList(currentPrompts);
+                updateStorageInfo();
+                if (promptCount) promptCount.textContent = '0';
+                if (downloadAllBtn) downloadAllBtn.disabled = true;
+                showFeedback('All prompts cleared successfully!', true);
+            } else {
+                showFeedback('Failed to clear prompts: ' + (response?.error || 'Unknown error'), false);
+            }
+        });
+    }
+
+    // Toggle prompts list visibility
+    function togglePromptsList() {
+        if (!promptsList) return;
         
-        if (platform.includes('win') || userAgent.includes('windows')) {
-            path = 'C:\\Users\\[Username]\\Downloads\\chatgpt-prompts\\';
-        } else if (platform.includes('mac') || userAgent.includes('mac')) {
-            path = '/Users/[Username]/Downloads/chatgpt-prompts/';
-        } else if (platform.includes('linux') || userAgent.includes('linux')) {
-            path = '/home/[Username]/Downloads/chatgpt-prompts/';
+        const isVisible = promptsList.style.display !== 'none';
+        promptsList.style.display = isVisible ? 'none' : 'block';
+        
+        if (viewPromptsBtn) {
+            viewPromptsBtn.textContent = isVisible ? 'View List' : 'Hide List';
         }
         
-        currentPath.textContent = path;
+        if (!isVisible) {
+            loadCapturedPrompts();
+        }
+    }
+
+    // Event listeners
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleCapture);
+    }
+
+    if (downloadAllBtn) {
+        downloadAllBtn.addEventListener('click', downloadAllPrompts);
+    }
+
+    if (viewPromptsBtn) {
+        viewPromptsBtn.addEventListener('click', togglePromptsList);
+    }
+
+    if (clearPromptsBtn) {
+        clearPromptsBtn.addEventListener('click', clearAllPrompts);
+    }
+
+    // Debug info toggle
+    if (statusText) {
+        statusText.addEventListener('dblclick', function() {
+            if (debugInfo) {
+                const isVisible = debugInfo.style.display !== 'none';
+                debugInfo.style.display = isVisible ? 'none' : 'block';
+            }
+        });
     }
 
     // Keyboard shortcuts
     document.addEventListener('keydown', function(event) {
-        // Ctrl/Cmd + T to toggle
         if ((event.ctrlKey || event.metaKey) && event.key === 't') {
             event.preventDefault();
             toggleCapture();
         }
         
-        // Ctrl/Cmd + D for debug info
         if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
             event.preventDefault();
-            requestDebugInfo();
+            downloadAllPrompts();
         }
         
-        // Ctrl/Cmd + R to refresh status
         if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
             event.preventDefault();
             getCurrentStatus();
         }
     });
 
-    // Add keyboard shortcut info to popup
-    const shortcutsInfo = document.createElement('div');
-    shortcutsInfo.innerHTML = `
-        <small style="color: #666; font-size: 11px; margin-top: 10px; display: block;">
-            Shortcuts: Ctrl+T (toggle) | Ctrl+D (debug) | Ctrl+R (refresh)
-        </small>
-    `;
-    
-    // Find a good place to add shortcuts info
-    const container = document.querySelector('.container') || document.body;
-    if (container && container.lastElementChild) {
-        container.appendChild(shortcutsInfo);
-    }
-
     // Initialize popup
     function initializePopup() {
         console.log('🎬 Initializing popup...');
         
-        updateFilePath();
         getCurrentStatus();
+        loadCapturedPrompts();
 
-        // Set up less frequent status checking to avoid overwhelming the content script
         if (statusCheckInterval) clearInterval(statusCheckInterval);
         statusCheckInterval = setInterval(() => {
             getCurrentStatus();
-        }, 15000); // Every 15 seconds instead of 10
+            updateStorageInfo();
+        }, 15000);
         
         console.log('✅ Popup initialization complete');
     }
@@ -319,45 +441,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start initialization
     initializePopup();
 
-    // Add visual feedback for actions
-    function showFeedback(message, isSuccess = true) {
-        const feedback = document.createElement('div');
-        feedback.style.cssText = `
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 8px 16px;
-            background: ${isSuccess ? '#16a34a' : '#dc2626'};
-            color: white;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-        `;
-        feedback.textContent = message;
-        
-        document.body.appendChild(feedback);
-        
-        // Animate in
-        setTimeout(() => feedback.style.opacity = '1', 10);
-        
-        // Remove after delay
-        setTimeout(() => {
-            feedback.style.opacity = '0';
-            setTimeout(() => {
-                if (feedback.parentNode) {
-                    feedback.parentNode.removeChild(feedback);
-                }
-            }, 300);
-        }, 2000);
-    }
-
-    // Enhanced error reporting
+    // Error handling
     window.addEventListener('error', function(event) {
         console.error('Popup error:', event.error);
         showFeedback('Extension error occurred', false);
     });
-
 });

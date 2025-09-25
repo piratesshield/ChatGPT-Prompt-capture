@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <style>
         body {
-            width: 350px;
+            width: 380px;
             padding: 16px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
@@ -129,7 +129,71 @@
             letter-spacing: 0.5px;
         }
         
-        .file-location {
+        .download-section {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .download-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+        }
+        
+        .download-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .download-btn {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 100px;
+        }
+        
+        .download-btn:hover {
+            background-color: #059669;
+            transform: translateY(-1px);
+        }
+        
+        .download-btn:disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .download-btn.secondary {
+            background-color: #6366f1;
+        }
+        
+        .download-btn.secondary:hover {
+            background-color: #4f46e5;
+        }
+        
+        .download-btn.danger {
+            background-color: #ef4444;
+        }
+        
+        .download-btn.danger:hover {
+            background-color: #dc2626;
+        }
+        
+        .storage-info {
             background: #f1f5f9;
             border-radius: 8px;
             padding: 12px;
@@ -137,22 +201,81 @@
             border-left: 4px solid #3b82f6;
         }
         
-        .file-location h3 {
+        .storage-info h3 {
             margin: 0 0 8px 0;
             font-size: 14px;
             font-weight: 600;
             color: #1e293b;
         }
         
-        .file-path {
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
+        .storage-details {
+            font-size: 12px;
             color: #475569;
+            line-height: 1.4;
+        }
+        
+        .prompts-list {
             background: white;
-            padding: 6px 8px;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .prompts-list h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .prompt-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .prompt-item:last-child {
+            border-bottom: none;
+        }
+        
+        .prompt-info {
+            flex: 1;
+            margin-right: 8px;
+        }
+        
+        .prompt-text {
+            font-size: 12px;
+            color: #374151;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        
+        .prompt-time {
+            font-size: 10px;
+            color: #64748b;
+        }
+        
+        .prompt-download {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 4px 8px;
             border-radius: 4px;
-            margin: 4px 0;
-            word-break: break-all;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .prompt-download:hover {
+            background-color: #059669;
         }
         
         .instructions {
@@ -187,6 +310,7 @@
             padding: 12px;
             font-size: 11px;
             color: #6b7280;
+            display: none;
         }
         
         .debug-info h3 {
@@ -202,24 +326,27 @@
             margin-bottom: 4px;
         }
         
-        .error-message {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 12px;
-            color: #dc2626;
+        .feedback {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            border-radius: 4px;
             font-size: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
         
-        .success-message {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 12px;
-            color: #16a34a;
-            font-size: 12px;
+        .feedback.success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .feedback.error {
+            background: #ef4444;
+            color: white;
         }
     </style>
 </head>
@@ -250,20 +377,29 @@
         </div>
     </div>
     
-    <div class="file-location">
-        <h3>📁 Files Saved To:</h3>
-        <div class="file-path" id="currentPath">Downloads/chatgpt-prompts/</div>
-        <details style="margin-top: 8px;">
-            <summary style="font-size: 12px; color: #64748b; cursor: pointer;">Show all platforms</summary>
-            <div style="margin-top: 8px;">
-                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;"><strong>Windows:</strong></div>
-                <div class="file-path">C:\Users\[Username]\Downloads\chatgpt-prompts\</div>
-                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;"><strong>Mac:</strong></div>
-                <div class="file-path">/Users/[Username]/Downloads/chatgpt-prompts/</div>
-                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;"><strong>Linux:</strong></div>
-                <div class="file-path">/home/[Username]/Downloads/chatgpt-prompts/</div>
-            </div>
-        </details>
+    <div class="download-section">
+        <h3>📥 Download Captured Prompts</h3>
+        <div class="download-buttons">
+            <button class="download-btn" id="downloadAllBtn" disabled>Download All</button>
+            <button class="download-btn secondary" id="viewPromptsBtn">View List</button>
+            <button class="download-btn danger" id="clearPromptsBtn">Clear All</button>
+        </div>
+    </div>
+    
+    <div class="storage-info">
+        <h3>💾 Storage Information</h3>
+        <div class="storage-details">
+            <div>Location: <strong>Extension Local Storage</strong></div>
+            <div>Prompts Stored: <span id="storedCount">0</span></div>
+            <div>Storage Used: <span id="storageUsed">0 KB</span></div>
+        </div>
+    </div>
+    
+    <div class="prompts-list" id="promptsList" style="display: none;">
+        <h3>📝 Captured Prompts</h3>
+        <div id="promptsContainer">
+            <p style="text-align: center; color: #64748b; font-size: 12px;">No prompts captured yet</p>
+        </div>
     </div>
     
     <div class="instructions">
@@ -271,12 +407,12 @@
         <ul>
             <li>Make sure you're on chat.openai.com or chatgpt.com</li>
             <li>Type a message and press Enter or click Send</li>
-            <li>Check your Downloads folder for saved prompts</li>
+            <li>Use the download buttons above to get your prompts</li>
             <li>Open browser console (F12) to see capture logs</li>
         </ul>
     </div>
     
-    <div class="debug-info" id="debugInfo" style="display: none;">
+    <div class="debug-info" id="debugInfo">
         <h3>Debug Information:</h3>
         <div class="debug-row">
             <span>Current URL:</span>
