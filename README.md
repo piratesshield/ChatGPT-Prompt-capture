@@ -1,5 +1,7 @@
 # ChatGPT Prompt Capture Chrome Extension
 
+![GPT Robot Logo](public/mmimage.png)
+
 This Chrome extension automatically captures and saves your ChatGPT prompts as text files every time you submit a prompt. It does **not** capture AI responses, only your input prompts.
 
 ## 🚀 Features
