@@ -32,11 +32,17 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ChatGPT Prompt Capture - Click to view status"
+    "default_title": "ChatGPT Prompt Capture - Click to view status",
+    "default_icon": {
+      "16": "public/mmimage.png",
+      "32": "public/mmimage.png",
+      "48": "public/mmimage.png",
+      "128": "public/mmimage.png"
+    }
   },
   "web_accessible_resources": [
     {
-      "resources": ["*.js"],
+      "resources": ["*.js", "public/mmimage.png"],
       "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*", "https://*.openai.com/*"]
     }
   ]
