@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
             id: promptId
         }, function(response) {
             if (response && response.success) {
-                showFeedback('Prompt downloaded successfully!', true);
+                showFeedback('Prompt downloaded to Downloads/chatgpt-prompts/', true);
             } else {
                 showFeedback('Failed to download prompt: ' + (response?.error || 'Unknown error'), false);
             }
@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
             downloadAllBtn.textContent = 'Download All';
 
             if (response && response.success) {
-                showFeedback(`Downloaded ${currentPrompts.length} prompts successfully!`, true);
+                showFeedback(`Downloaded ${response.count || currentPrompts.length} prompts to Downloads/chatgpt-prompts/`, true);
             } else {
                 showFeedback('Failed to download prompts: ' + (response?.error || 'Unknown error'), false);
             }

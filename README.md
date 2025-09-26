@@ -46,7 +46,7 @@ Your captured prompts are stored in the extension's local storage and can be dow
 
 1. **Individual Downloads**: Click the download button (↓) next to each prompt in the "View List"
 2. **Download All**: Use the "Download All" button to get all prompts in a single file
-3. **File Location**: Downloaded files will be saved to your browser's default download location
+3. **File Location**: Downloaded files will be saved to your Downloads folder in a "chatgpt-prompts" subfolder
 
 ### 💾 **Storage Information:**
 - **Location**: Extension Local Storage (built into Chrome)
@@ -56,6 +56,7 @@ Your captured prompts are stored in the extension's local storage and can be dow
 ### File Format
 Each prompt is saved as a separate text file with:
 - **Filename format**: `chatgpt-prompt-YYYY-MM-DDTHH-MM-SS-sssZ.txt`
+- **Saved to**: `Downloads/chatgpt-prompts/` folder
 - **Content includes**:
   - Timestamp of when the prompt was sent
   - Your complete prompt text

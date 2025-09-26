@@ -1,5 +1,5 @@
-// Enhanced Background Script for ChatGPT Prompt Capture v4.0
-console.log('🚀 Background script loaded - ChatGPT Prompt Capture v4.0');
+// Enhanced Background Script for ChatGPT Prompt Capture v4.1
+console.log('🚀 Background script loaded - ChatGPT Prompt Capture v4.1');
 
 // Store captured prompts in memory and local storage
 let capturedPrompts = [];
@@ -20,7 +20,7 @@ function initializeStorage() {
     });
 }
 
-// Save prompt to local storage and create downloadable file
+// Save prompt to local storage
 function savePromptToStorage(promptData) {
     return new Promise((resolve, reject) => {
         try {
@@ -45,13 +45,6 @@ function savePromptToStorage(promptData) {
     });
 }
 
-// Create downloadable blob URL for a prompt
-function createDownloadableFile(promptData) {
-    const content = formatPromptContent(promptData);
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    return URL.createObjectURL(blob);
-}
-
 // Format prompt content for file
 function formatPromptContent(promptData) {
     return `ChatGPT Prompt #${promptData.counter}
@@ -69,6 +62,12 @@ ${'='.repeat(60)}
 End of prompt
 
 `;
+}
+
+// Convert text to data URL for download
+function createDataUrl(content) {
+    const encoded = encodeURIComponent(content);
+    return `data:text/plain;charset=utf-8,${encoded}`;
 }
 
 // Handle messages from content script and popup
@@ -115,20 +114,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const prompt = capturedPrompts.find(p => p.id === request.id);
         if (prompt) {
             try {
-                const url = createDownloadableFile(prompt);
+                const content = formatPromptContent(prompt);
+                const dataUrl = createDataUrl(content);
+                
                 chrome.downloads.download({
-                    url: url,
-                    filename: prompt.filename,
-                    saveAs: true
+                    url: dataUrl,
+                    filename: `chatgpt-prompts/${prompt.filename}`,
+                    saveAs: false
                 }, (downloadId) => {
                     if (chrome.runtime.lastError) {
+                        console.error('Download error:', chrome.runtime.lastError.message);
                         sendResponse({success: false, error: chrome.runtime.lastError.message});
                     } else {
-                        setTimeout(() => URL.revokeObjectURL(url), 5000);
+                        console.log('✅ Single prompt downloaded:', downloadId);
                         sendResponse({success: true, downloadId: downloadId});
                     }
                 });
             } catch (error) {
+                console.error('Error creating download:', error);
                 sendResponse({success: false, error: error.message});
             }
         } else {
@@ -148,6 +151,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 ${'='.repeat(60)}
 Total Prompts: ${capturedPrompts.length}
 Export Date: ${new Date().toLocaleString()}
+Extension: ChatGPT Prompt Capture v4.1
 ${'='.repeat(60)}
 
 `;
@@ -159,23 +163,24 @@ ${'='.repeat(60)}
                 }
             });
             
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
+            const dataUrl = createDataUrl(content);
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
             
             chrome.downloads.download({
-                url: url,
-                filename: `all-chatgpt-prompts-${timestamp}.txt`,
-                saveAs: true
+                url: dataUrl,
+                filename: `chatgpt-prompts/all-chatgpt-prompts-${timestamp}.txt`,
+                saveAs: false
             }, (downloadId) => {
                 if (chrome.runtime.lastError) {
+                    console.error('Download all error:', chrome.runtime.lastError.message);
                     sendResponse({success: false, error: chrome.runtime.lastError.message});
                 } else {
-                    setTimeout(() => URL.revokeObjectURL(url), 5000);
-                    sendResponse({success: true, downloadId: downloadId});
+                    console.log('✅ All prompts downloaded:', downloadId);
+                    sendResponse({success: true, downloadId: downloadId, count: capturedPrompts.length});
                 }
             });
         } catch (error) {
+            console.error('Error creating download all:', error);
             sendResponse({success: false, error: error.message});
         }
         return true;
