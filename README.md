@@ -81,6 +81,10 @@ Prompt: How do I create a Chrome extension?
 5. **Download Prompts**: Use the download buttons in the extension popup
 6. **Toggle if Needed**: Use the popup to enable/disable capturing
 
+   <img width="1146" height="515" alt="Screenshot 2025-09-26 091035" src="https://github.com/user-attachments/assets/f26af334-c6ee-4818-ad77-a1369caaa65a" />
+<img width="1306" height="656" alt="Screenshot 2025-09-26 091314" src="https://github.com/user-attachments/assets/e2c0ecac-3820-44f2-a1ed-a8ac0b6347f4" />
+
+
 ## 📥 **New Download Features**
 
 The extension popup now includes:
